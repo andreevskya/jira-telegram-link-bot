@@ -1,0 +1,9 @@
+import os
+
+JIRA_URL = os.environ['JIRA_URL']
+JIRA_USER = os.environ['JIRA_USER']
+JIRA_PASSWORD = os.environ['JIRA_PASSWORD']
+
+
+TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
+TELEGRAM_TARGET_GROUP_CHAT_ID = os.environ['TELEGRAM_TARGET_GROUP_CHAT_ID']
