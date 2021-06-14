@@ -15,6 +15,15 @@ def get_jira_issue_caption(jira_client, issue_tag):
         print("Unexpected error:", sys.exc_info()[0])
         return "ERROR"
 
+def extract_jira_issues(message_text):
+    jira_links = jira_issue_regex.findall(message_text)
+    issues = []
+    for link in jira_links:
+        tag = link[link.rfind('/') + 1:]
+        title = get_jira_issue_caption(jira, tag)
+        issues.append((tag, link, title))
+    return issues
+
 def handle_message(message):
     if not settings.TELEGRAM_TARGET_GROUP_CHAT_ID:
         print('Received message "%s" from chat "%s" with id "%s"' % (message.text, message.chat.title, message.chat.id))
@@ -31,9 +40,9 @@ def handle_message(message):
     for jira_link in jira_links:
         issue_tag = jira_link[jira_link.rfind('/') + 1:]
         issue_title = get_jira_issue_caption(jira, issue_tag)
-        reply_text += '%s "%s"\n' % (jira_link, issue_title)
+        reply_text += '[%s](%s) "%s"\n' % (issue_tag, jira_link, issue_title)
     if reply_text:
-        bot.send_message(message.chat.id, reply_text)
+        bot.send_message(chat_id=message.chat.id, text=reply_text, parse_mode="MARKDOWN")
 
 def handle_messages(messages):
     for message in messages:
