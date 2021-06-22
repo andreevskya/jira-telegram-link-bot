@@ -5,25 +5,32 @@ import re
 import logging
 from jira import JIRA, JIRAError
 
-jira_issue_regex = re.compile('%s/browse/[a-zA-Z]+-[0-9]+' % settings.JIRA_URL, re.IGNORECASE)
+jira_issue_regex = re.compile('(?:%s/browse/[a-zA-Z]+-[0-9]+)|(?:(?:^| )[A-Z]+-[0-9]+(?:$| ))' % settings.JIRA_URL, re.IGNORECASE | re.MULTILINE)
 jira = None
 
-def get_jira_issue_caption(jira_client, issue_tag):
+def get_jira_issue_link_and_caption(jira_client, issue_tag):
     try:
-        return jira_client.issue(issue_tag).fields.summary
+        issue = jira_client.issue(issue_tag)
+        return (issue.permalink(), issue.fields.summary)
     except JIRAError as je:
-        return "ERROR: " + je.text
+        return (None, "ERROR: " + je.text)
     except:
         print("Unexpected error:", traceback.format_exc())
-        return "ERROR"
+        return (None, "ERROR")
 
 def extract_jira_issues(jira_client, message_text):
     jira_links = jira_issue_regex.findall(message_text)
     issues = []
+    processed_links = set()
     for link in jira_links:
-        tag = link[link.rfind('/') + 1:]
-        title = get_jira_issue_caption(jira_client, tag)
-        issues.append((tag, link, title))
+        tag = link[link.rfind('/') + 1:].strip()
+        if tag.upper() in processed_links:
+            continue
+        processed_links.add(tag.upper())
+        link_and_caption = get_jira_issue_link_and_caption(jira_client, tag)
+        if not link_and_caption[0]:
+            continue
+        issues.append((tag, link_and_caption[0], link_and_caption[1]))
     return issues
 
 def compose_message(jira_link_tuples):
